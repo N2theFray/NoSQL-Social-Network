@@ -7,4 +7,4 @@ router.use( (req, res) => {
     res.status(404).send('<h1>Error mate</h1>')
 })
 
-exports = router
+module.exports = router
