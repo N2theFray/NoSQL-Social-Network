@@ -4,10 +4,10 @@
 https://drive.google.com/file/d/1e6d1CbZuGYMDlK1AJKULK7FSWC83oQs7/view
 
 ## Technologies
-Insomnia
-NoSQL
-Mongo DB
-Mongoose
+</br> Insomnia
+</br> NoSQL
+</br> Mongo DB
+</br> Mongoose
 
 ## User Story
 A social networking app where a user is able to post, edit, and delete thoughts, users and reactions
