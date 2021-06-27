@@ -1,9 +1,13 @@
-const { Thought } = require('../models')
+const { Thought, User, Reaction } = require('../models')
 
 const thoughtController = {
 
     getAllThoughts(req,res){
         Thought.find({})
+        .populate({
+            path: 'reactions',
+            select: '-__v'
+        })
         .select('-__v')
         .then(dbThoughtData => res.json(dbThoughtData))
         .catch(err => {
@@ -13,27 +17,49 @@ const thoughtController = {
 
     },
     getThoughtById({ params }, res){
-        Thought.findOne({ _id: params.id}, res)
+        Thought.findOne({ _id: params.id })
+        .populate([
+           
+            {
+                path: 'reactions',
+                select: '-__v'
+            }
+        ])
         .select('-__v')
-        .then(dbThoughtData => {
-            if(!dbThoughtData){
-                res.json(404).json({ message: 'This is not the thought you are looking for'})
+        .then(dbUserData => {
+            if(!dbUserData){
+                res.status(404).json({ message:"try again homie"})
                 return
             }
-            res.json(dbThoughtData)
+            res.json(dbUserData)
         })
-        .catch(err => {
-            console.log(err)
-            res.status(400).json(err)
-        })
+        .catch(err => res.status(400).json(err))
 
     },
     createThought({ body }, res){
         Thought.create(body)
-        .then(dbThoughtData => res.json(dbThoughtData))
-        .catch(err =>{
+        .then(dbThoughtData => {
+            console.log(dbThoughtData)
+            console.log(body.userId)
+            User.findOneAndUpdate(
+                { _id: body.userId},
+                { $push: { thoughts: dbThoughtData._id} },
+                { new: true }
+            )
+            .then(dbThoughtData => {
+                if(!dbThoughtData){
+                    res.status(404).json({ message: 'whatchu talking bout'})
+                }
+                res.json(dbThoughtData)
+            })
+            .catch(err =>{
+                console.log(err)
+                res.status(400).json(err)
+            })
+        })
+        .catch(err => {
             console.log(err)
-            res.status(400).json(err)
+            res.status(500).json(err)
         })
 
     },
@@ -52,18 +78,51 @@ const thoughtController = {
         })
 
     },
-    deleteThought({ params}, res){
-        Thought.findOneAndUpdate({ _id: params.id}, res)
-        .then(dbThoughtData => {
-            if(!dbThoughtData){
-                res.status(404).json({ message: 'Not today kiddo'})
+    deleteThought({ params }, res){
+        Thought.findOneAndDelete({ _id: params.id }, res )
+        .then(dbUserData => {
+            if(!dbUserData){
+                res.status(404).json({ message: 'No user found with this id'})
                 return
             }
+            res.json(dbUserData)
         })
         .catch(err => {
             console.log(err)
             res.status(400).json(err)
         })
+        
+    },
+    addReaction({ params, body}, res ){
+        Thought.findOneAndUpdate(
+            { _id: params.id },
+            { $push: { reactions: body } },
+            { new: true, runValidators: true }
+        )
+        .then(dbThoughtData => {
+            if(!dbThoughtData){
+                res.status(404).json({ message: 'Not today kiddo, there is no thought to react to' })
+            }
+            res.json(dbThoughtData)
+        })
+        .catch(err => {
+            console.log(err)
+            res.status(400).json(dbThoughtData)
+        })
+    },
+    deleteReaction({ params, body }, res){
+        Thought.findOneAndUpdate(
+            { _id: params.id },
+            { $pull: { reactions: {reactionId: body.reactionId} } },
+            { runValidators: true, new: true}
+        )
+        .then(dbThoughtData => {
+            if(!dbThoughtData){
+                res.status(404).json({ message: 'no reactions here'})
+            }
+            res.json(dbThoughtData)
+        })
+        .catch(err => {res.status(400).json(err)})
     }
 
 }
